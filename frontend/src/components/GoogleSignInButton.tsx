@@ -50,17 +50,34 @@ export default function GoogleSignInButton({ role, text = 'continue_with', onSuc
   const { loginWithGoogle } = useAuth()
   const containerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!CLIENT_ID || !containerRef.current) return
+  // Refs estáveis para callbacks e props mutáveis: deixam o useEffect rodar uma única vez
+  // sem capturar referências inline que mudam a cada render do parent.
+  const onSuccessRef = useRef(onSuccess)
+  const onErrorRef = useRef(onError)
+  const roleRef = useRef(role)
+  const loginRef = useRef(loginWithGoogle)
+  onSuccessRef.current = onSuccess
+  onErrorRef.current = onError
+  roleRef.current = role
+  loginRef.current = loginWithGoogle
 
+  useEffect(() => {
+    if (!CLIENT_ID) return
+    const container = containerRef.current
+    if (!container) return
+
+    let cancelled = false
+    let timeoutId: number | null = null
     let attempts = 0
+
     const tryRender = () => {
+      if (cancelled) return
       const gid = window.google?.accounts?.id
       if (!gid) {
         if (attempts++ < 40) {
-          setTimeout(tryRender, 100)
-        } else if (onError) {
-          onError('Não foi possível carregar Login com Google. Verifique sua conexão.')
+          timeoutId = window.setTimeout(tryRender, 100)
+        } else {
+          onErrorRef.current?.('Não foi possível carregar Login com Google. Verifique sua conexão.')
         }
         return
       }
@@ -68,31 +85,34 @@ export default function GoogleSignInButton({ role, text = 'continue_with', onSuc
         client_id: CLIENT_ID,
         callback: async (resp) => {
           try {
-            const user = await loginWithGoogle(resp.credential, role)
-            onSuccess?.(user)
+            const user = await loginRef.current(resp.credential, roleRef.current)
+            onSuccessRef.current?.(user)
           } catch (err) {
-            onError?.((err as Error).message)
+            onErrorRef.current?.((err as Error).message)
           }
         },
         auto_select: false,
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: true,
       })
-      if (containerRef.current) {
-        containerRef.current.innerHTML = ''
-        gid.renderButton(containerRef.current, {
-          theme: 'outline',
-          size: 'large',
-          text,
-          shape: 'rectangular',
-          logo_alignment: 'left',
-          width: containerRef.current.clientWidth || 320,
-          locale: 'pt-BR',
-        })
-      }
+      container.innerHTML = ''
+      gid.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        text,
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: container.clientWidth || 320,
+        locale: 'pt-BR',
+      })
     }
     tryRender()
-  }, [loginWithGoogle, onError, onSuccess, role, text])
+
+    return () => {
+      cancelled = true
+      if (timeoutId !== null) window.clearTimeout(timeoutId)
+    }
+  }, [text])
 
   if (!CLIENT_ID) {
     return (
