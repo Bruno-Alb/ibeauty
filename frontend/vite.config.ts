@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon.svg'],
+      includeAssets: ['favicon.svg', 'favicon.png', 'favicon-32.png', 'apple-touch-icon.png', 'icon.svg'],
       manifest: {
         name: 'Ibeauty — serviços de beleza',
         short_name: 'Ibeauty',
