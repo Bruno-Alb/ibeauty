@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
     init_db()
     if settings.seed_on_startup:
         seed_if_empty()
-    cleanup_test_providers()
+        cleanup_test_providers()
     yield
 
 
