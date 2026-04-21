@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import ProviderMap from '../components/ProviderMap'
@@ -12,29 +12,49 @@ const CATEGORIES = [
   { value: 'estetica', label: 'Estética' },
 ]
 
+type LocStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable' | 'timeout' | 'manual'
+
 export default function Home() {
   const navigate = useNavigate()
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null)
-  const [locDenied, setLocDenied] = useState(false)
+  const [locStatus, setLocStatus] = useState<LocStatus>('idle')
+  const [locAccuracy, setLocAccuracy] = useState<number | null>(null)
+  const [locLabel, setLocLabel] = useState<string>('')
+  const [manualQuery, setManualQuery] = useState('')
+  const [manualSearching, setManualSearching] = useState(false)
   const [category, setCategory] = useState('')
   const [q, setQ] = useState('')
   const [radius, setRadius] = useState(50)
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
-  useEffect(() => {
+  const requestGeolocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
-      setLocDenied(true)
+      setLocStatus('unavailable')
       return
     }
+    setLocStatus('requesting')
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserLoc([pos.coords.latitude, pos.coords.longitude]),
-      () => setLocDenied(true),
-      { timeout: 8000 },
+      (pos) => {
+        setUserLoc([pos.coords.latitude, pos.coords.longitude])
+        setLocAccuracy(pos.coords.accuracy)
+        setLocStatus('granted')
+        setLocLabel('Sua localização atual')
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) setLocStatus('denied')
+        else if (error.code === error.TIMEOUT) setLocStatus('timeout')
+        else setLocStatus('unavailable')
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     )
   }, [])
+
+  useEffect(() => {
+    requestGeolocation()
+  }, [requestGeolocation])
 
   useEffect(() => {
     setLoading(true)
@@ -55,14 +75,106 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [userLoc, category, q, radius])
 
+  const searchManualLocation = useCallback(async () => {
+    const query = manualQuery.trim()
+    if (!query) return
+    setManualSearching(true)
+    setErr('')
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`
+      const res = await fetch(url, { headers: { Accept: 'application/json' } })
+      const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>
+      if (data.length === 0) {
+        setErr(`Não encontrei "${query}". Tente cidade, bairro ou CEP.`)
+        return
+      }
+      const { lat, lon, display_name } = data[0]
+      setUserLoc([Number(lat), Number(lon)])
+      setLocStatus('manual')
+      setLocAccuracy(null)
+      setLocLabel(display_name.split(',').slice(0, 3).join(',').trim())
+    } catch {
+      setErr('Erro ao buscar localização. Tente novamente.')
+    } finally {
+      setManualSearching(false)
+    }
+  }, [manualQuery])
+
   const visibleProviders = useMemo(() => providers, [providers])
+
+  const locMessage = (() => {
+    switch (locStatus) {
+      case 'idle':
+      case 'requesting':
+        return 'Localizando você...'
+      case 'granted':
+        return `📍 ${locLabel}${locAccuracy != null ? ` (precisão ±${Math.round(locAccuracy)}m)` : ''}`
+      case 'manual':
+        return `📍 ${locLabel}`
+      case 'denied':
+        return 'Permissão de localização negada. Busque pelo endereço abaixo ou libere o acesso nas configurações do navegador e clique em "Usar minha localização".'
+      case 'timeout':
+        return 'Demorou para obter sua localização. Tente de novo ou busque por endereço.'
+      case 'unavailable':
+        return 'Não consegui acessar o GPS. Busque pelo endereço abaixo.'
+    }
+  })()
+
+  const locTone =
+    locStatus === 'granted' || locStatus === 'manual'
+      ? '#2e7d32'
+      : locStatus === 'denied' || locStatus === 'unavailable' || locStatus === 'timeout'
+        ? '#b71c1c'
+        : '#666'
+
+  const proCount = providers.filter((p) => p.plan === 'pro').length
+  const totalRatings = providers.reduce((acc, p) => acc + p.rating_count, 0)
 
   return (
     <div className="container">
       <section className="hero">
-        <h1>Beleza pertinho de você</h1>
-        <p>Encontre profissionais de manicure, cabelo, sobrancelha e estética na sua região e agende seu horário.</p>
+        <span className="pro-badge" style={{ marginBottom: 12 }}>Ibeauty · marketplace de beleza</span>
+        <h1>Beleza <span>pertinho</span> de você, no horário que você escolher.</h1>
+        <p>
+          Manicure, cabelo, sobrancelha e estética na sua região — sem ligar, sem ir atrás de horário,
+          com lembrete automático no WhatsApp.
+        </p>
+        <div className="hero-cta">
+          <a className="btn btn-primary" href="#buscar">Agendar agora</a>
+          <a className="btn btn-outline" href="/planos">Sou prestador →</a>
+        </div>
+        <div className="hero-stats">
+          <div className="hero-stat">
+            <strong>{providers.length || '—'}</strong>
+            <span>profissionais na plataforma</span>
+          </div>
+          <div className="hero-stat">
+            <strong>{proCount}</strong>
+            <span>no plano Pro hoje</span>
+          </div>
+          <div className="hero-stat">
+            <strong>{totalRatings}</strong>
+            <span>avaliações de clientes</span>
+          </div>
+        </div>
       </section>
+
+      <section className="social-proof">
+        <div className="proof-card">
+          <h4>Agendamento em 30s</h4>
+          <p>Escolha serviço, dia e horário. Tudo online — o prestador já recebe confirmado.</p>
+        </div>
+        <div className="proof-card">
+          <h4>Lembrete por WhatsApp</h4>
+          <p>Cliente e prestador recebem um link pronto no dia, reduzindo faltas em até 40%.</p>
+        </div>
+        <div className="proof-card">
+          <h4>Sem comissão por agendamento</h4>
+          <p>No Ibeauty você paga só o plano Pro — todo o valor da cliente vai pra você.</p>
+        </div>
+      </section>
+
+      <h2 id="buscar" style={{ marginTop: 28 }}>Encontre um profissional</h2>
 
       <div className="filters">
         <input
@@ -77,26 +189,47 @@ export default function Home() {
             <option key={c.value} value={c.value}>{c.label}</option>
           ))}
         </select>
-        {userLoc && (
-          <select
-            className="select"
-            value={radius}
-            onChange={(e) => setRadius(Number(e.target.value))}
-          >
-            <option value={5}>Até 5 km</option>
-            <option value={10}>Até 10 km</option>
-            <option value={25}>Até 25 km</option>
-            <option value={50}>Até 50 km</option>
-            <option value={20037}>Qualquer distância</option>
-          </select>
-        )}
+        <select
+          className="select"
+          value={radius}
+          onChange={(e) => setRadius(Number(e.target.value))}
+          disabled={!userLoc}
+          title={!userLoc ? 'Defina sua localização para filtrar por distância' : undefined}
+        >
+          <option value={5}>Até 5 km</option>
+          <option value={10}>Até 10 km</option>
+          <option value={25}>Até 25 km</option>
+          <option value={50}>Até 50 km</option>
+          <option value={20037}>Qualquer distância</option>
+        </select>
       </div>
 
-      {locDenied && (
-        <p style={{ color: '#666', marginTop: 12, fontSize: '0.9rem' }}>
-          Localização não disponível — mostrando todos os profissionais.
-        </p>
-      )}
+      <div className="loc-bar">
+        <span style={{ color: locTone, fontSize: '0.9rem' }}>{locMessage}</span>
+        <button type="button" className="btn btn-outline btn-sm" onClick={requestGeolocation} disabled={locStatus === 'requesting'}>
+          {locStatus === 'requesting' ? 'Buscando GPS...' : '📍 Usar minha localização'}
+        </button>
+      </div>
+
+      <div className="loc-manual">
+        <input
+          className="input"
+          placeholder="Ou digite cidade, bairro ou CEP (ex.: Vila Mariana, São Paulo)"
+          value={manualQuery}
+          onChange={(e) => setManualQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !manualSearching) searchManualLocation() }}
+          style={{ flex: 1, minWidth: 240 }}
+        />
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={searchManualLocation}
+          disabled={manualSearching || !manualQuery.trim()}
+        >
+          {manualSearching ? 'Buscando...' : 'Buscar'}
+        </button>
+      </div>
+
       {err && <p className="error">{err}</p>}
 
       <div className="provider-grid">
@@ -117,8 +250,16 @@ export default function Home() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div>
-                    <h3>{p.business_name}</h3>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0 }}>{p.business_name}</h3>
+                      {p.plan === 'pro' && <span className="pro-badge">Pro</span>}
+                    </div>
                     <div className="meta">{p.full_name} • {p.city}/{p.state}</div>
+                    {p.rating_avg != null && (
+                      <div className="rating-inline" style={{ marginTop: 4 }}>
+                        ★ {p.rating_avg.toFixed(1)} <small>({p.rating_count})</small>
+                      </div>
+                    )}
                   </div>
                   {p.distance_km != null && (
                     <span className="distance-badge">{p.distance_km.toFixed(1)} km</span>
@@ -139,7 +280,10 @@ export default function Home() {
           providers={visibleProviders}
           userLocation={userLoc}
           selectedId={selectedId}
-          onSelect={(id) => navigate(`/prestador/${id}`)}
+          onSelect={(id) => {
+            setSelectedId(id)
+            navigate(`/prestador/${id}`)
+          }}
         />
       </div>
     </div>

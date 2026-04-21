@@ -1,6 +1,8 @@
 from datetime import datetime, time
 from enum import Enum
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -14,6 +16,12 @@ class BookingStatus(str, Enum):
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
+
+
+class ProviderPlan(str, Enum):
+    FREE = "free"
+    PRO_PENDING = "pro_pending"
+    PRO = "pro"
 
 
 class User(SQLModel, table=True):
@@ -34,6 +42,7 @@ class ProviderProfile(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", unique=True)
     business_name: str
+    slug: str = Field(default="", index=True)
     bio: str = ""
     category: str = "manicure"
     address: str
@@ -42,9 +51,25 @@ class ProviderProfile(SQLModel, table=True):
     latitude: float
     longitude: float
     photo_url: str | None = None
+    gallery: str = ""  # '|'-separated image URLs
     working_hours_start: time = Field(default=time(9, 0))
     working_hours_end: time = Field(default=time(18, 0))
     slot_minutes: int = 30
+    plan: ProviderPlan = Field(
+        default=ProviderPlan.FREE,
+        sa_column=Column(
+            SAEnum(
+                ProviderPlan,
+                values_callable=lambda enum: [e.value for e in enum],
+                native_enum=False,
+            ),
+            nullable=False,
+            server_default=ProviderPlan.FREE.value,
+        ),
+    )
+    pro_requested_at: datetime | None = None
+    pro_approved_at: datetime | None = None
+    pro_expires_at: datetime | None = None
 
     user: User = Relationship(back_populates="provider_profile")
     services: list["Service"] = Relationship(
@@ -80,3 +105,13 @@ class Booking(SQLModel, table=True):
 
     provider: ProviderProfile = Relationship(back_populates="bookings")
     service: Service = Relationship(back_populates="bookings")
+
+
+class Review(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    booking_id: int = Field(foreign_key="booking.id", unique=True)
+    client_id: int = Field(foreign_key="user.id")
+    provider_id: int = Field(foreign_key="providerprofile.id", index=True)
+    rating: int
+    comment: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)

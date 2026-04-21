@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, formatPrice, formatTime } from '../api'
 import { useAuth } from '../auth'
-import type { AvailableSlot, Provider, Service } from '../types'
+import type { AvailableSlot, Provider, Review, Service } from '../types'
 
 function todayISO(): string {
   const d = new Date()
@@ -16,6 +16,7 @@ export default function ProviderDetail() {
   const providerId = Number(id)
 
   const [provider, setProvider] = useState<Provider | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [err, setErr] = useState('')
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [day, setDay] = useState(todayISO())
@@ -29,6 +30,7 @@ export default function ProviderDetail() {
       setProvider(p)
       if (p.services.length > 0) setSelectedService(p.services[0])
     }).catch((e: Error) => setErr(e.message))
+    api.listReviews(providerId).then(setReviews).catch(() => setReviews([]))
   }, [providerId])
 
   useEffect(() => {
@@ -76,13 +78,39 @@ export default function ProviderDetail() {
       <button className="btn btn-ghost" onClick={() => navigate(-1)}>← Voltar</button>
 
       <div className="card" style={{ marginTop: 12 }}>
-        <h1 style={{ margin: 0 }}>{provider.business_name}</h1>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <h1 style={{ margin: 0 }}>{provider.business_name}</h1>
+          {provider.plan === 'pro' && <span className="pro-badge">Pro</span>}
+          {provider.rating_avg != null && (
+            <span className="rating-inline">
+              ★ {provider.rating_avg.toFixed(1)} <small>({provider.rating_count})</small>
+            </span>
+          )}
+        </div>
         <p style={{ color: '#666', margin: '4px 0' }}>
           {provider.full_name} • {provider.address} • {provider.city}/{provider.state}
         </p>
         {provider.bio && <p>{provider.bio}</p>}
-        <span className="chip">{provider.category}</span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <span className="chip">{provider.category}</span>
+          {provider.slug && (
+            <Link className="btn btn-ghost btn-sm" to={`/p/${provider.slug}`}>
+              Ver perfil público
+            </Link>
+          )}
+        </div>
       </div>
+
+      {provider.gallery.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Galeria</h2>
+          <div className="gallery-grid">
+            {provider.gallery.map((url) => (
+              <img key={url} src={url} alt={provider.business_name} loading="lazy" />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2 style={{ marginTop: 0 }}>Serviços</h2>
@@ -154,6 +182,25 @@ export default function ProviderDetail() {
           </button>
         </div>
       )}
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2 style={{ marginTop: 0 }}>Avaliações</h2>
+        {reviews.length === 0 ? (
+          <p className="muted">Ainda não há avaliações. Seja a primeira depois do seu atendimento!</p>
+        ) : (
+          <div className="review-list">
+            {reviews.map((r) => (
+              <div key={r.id} className="review-row">
+                <div className="stars">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
+                <div className="meta">
+                  {r.client_name} · {new Date(r.created_at).toLocaleDateString('pt-BR')}
+                </div>
+                {r.comment && <p style={{ margin: '4px 0 0' }}>{r.comment}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -7,14 +7,18 @@ export default function Navbar() {
 
   return (
     <header className="navbar">
-      <Link to="/" className="brand">Ibeauty</Link>
+      <Link to="/" className="brand">
+        <span className="brand-dot">iB</span>
+        <span>Ibeauty</span>
+      </Link>
       <nav className="nav-links">
+        <Link to="/planos" className="nav-link-plans">Planos</Link>
         {user ? (
           <>
             <Link to="/minhas-reservas">Minhas reservas</Link>
-            {user.role === 'provider' && <Link to="/prestador">Painel prestador</Link>}
+            {user.role === 'provider' && <Link to="/prestador">Painel</Link>}
             {user.role !== 'provider' && <Link to="/virar-prestador">Virar prestador</Link>}
-            <span style={{ color: '#666', fontSize: '0.9rem' }}>Olá, {user.full_name.split(' ')[0]}</span>
+            <span className="nav-hello">Olá, {user.full_name.split(' ')[0]}</span>
             <button
               className="btn btn-ghost"
               onClick={() => {
