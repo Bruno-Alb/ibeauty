@@ -175,7 +175,7 @@ export default function Home() {
           placeholder="Ou digite cidade, bairro ou CEP (ex.: Vila Mariana, São Paulo)"
           value={manualQuery}
           onChange={(e) => setManualQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') searchManualLocation() }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !manualSearching) searchManualLocation() }}
           style={{ flex: 1, minWidth: 240 }}
         />
         <button
