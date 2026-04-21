@@ -58,7 +58,7 @@ export default function Plans() {
     }
   }
 
-  const price = plan?.price_cents ?? 3900
+  const price = plan?.price_cents ?? 990
 
   return (
     <div className="container">

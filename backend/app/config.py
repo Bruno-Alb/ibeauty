@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     pix_key_type: str = "phone"  # cpf | email | phone | random
     pix_receiver_name: str = "BRUNO ALB FERREIRA"
     pix_receiver_city: str = "SAO PAULO"
-    pro_price_cents: int = 3900
+    pro_price_cents: int = 990
     admin_whatsapp: str = "5511981650278"  # E.164 sem '+'
 
 
