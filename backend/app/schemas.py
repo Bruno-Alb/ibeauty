@@ -1,8 +1,12 @@
 from datetime import datetime, time
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 from app.models import BookingStatus, ProviderPlan, UserRole
+
+
+def _normalize_email(value: str) -> str:
+    return value.strip().lower()
 
 
 class UserCreate(BaseModel):
@@ -11,6 +15,11 @@ class UserCreate(BaseModel):
     full_name: str
     phone: str | None = None
     role: UserRole = UserRole.CLIENT
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize(cls, v: str) -> str:
+        return _normalize_email(v)
 
 
 class UserRead(BaseModel):
@@ -24,6 +33,11 @@ class UserRead(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize(cls, v: str) -> str:
+        return _normalize_email(v)
 
 
 class GoogleLoginRequest(BaseModel):
