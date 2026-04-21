@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import init_db
 from app.routers import auth, bookings, providers
-from app.seed import seed_if_empty
+from app.seed import cleanup_test_providers, seed_if_empty
 
 
 @asynccontextmanager
@@ -14,6 +14,7 @@ async def lifespan(app: FastAPI):
     init_db()
     if settings.seed_on_startup:
         seed_if_empty()
+    cleanup_test_providers()
     yield
 
 

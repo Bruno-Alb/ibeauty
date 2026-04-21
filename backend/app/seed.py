@@ -3,16 +3,18 @@ from datetime import time
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.models import ProviderProfile, Service, User, UserRole
+from app.models import Booking, ProviderProfile, Service, User, UserRole
 from app.security import hash_password
 
 
 SEED_PASSWORD = "ibeauty123"
 
+CLEANUP_BUSINESS_NAMES = {"teste unha"}
+
 
 SEED_PROVIDERS = [
     {
-        "user": {"email": "ana.manicure@ibeauty.dev", "full_name": "Ana Souza"},
+        "user": {"email": "ana.manicure@ibeauty.dev", "full_name": "Ana Souza", "phone": "+5511999010101"},
         "profile": {
             "business_name": "Ana Nail Studio",
             "bio": "Manicure e pedicure com atendimento cuidadoso. Esmaltação em gel.",
@@ -33,7 +35,7 @@ SEED_PROVIDERS = [
         ],
     },
     {
-        "user": {"email": "bia.cabelo@ibeauty.dev", "full_name": "Beatriz Lima"},
+        "user": {"email": "bia.cabelo@ibeauty.dev", "full_name": "Beatriz Lima", "phone": "+5511999020202"},
         "profile": {
             "business_name": "Bia Hair",
             "bio": "Cortes femininos, escova e coloração.",
@@ -54,7 +56,7 @@ SEED_PROVIDERS = [
         ],
     },
     {
-        "user": {"email": "camila.sobrancelha@ibeauty.dev", "full_name": "Camila Ribeiro"},
+        "user": {"email": "camila.sobrancelha@ibeauty.dev", "full_name": "Camila Ribeiro", "phone": "+5511999030303"},
         "profile": {
             "business_name": "Camila Brows",
             "bio": "Design de sobrancelhas, henna e brow lamination.",
@@ -75,7 +77,7 @@ SEED_PROVIDERS = [
         ],
     },
     {
-        "user": {"email": "daniela.estetica@ibeauty.dev", "full_name": "Daniela Oliveira"},
+        "user": {"email": "daniela.estetica@ibeauty.dev", "full_name": "Daniela Oliveira", "phone": "+5511999040404"},
         "profile": {
             "business_name": "Dani Estética",
             "bio": "Limpeza de pele, massagem e drenagem linfática.",
@@ -96,7 +98,7 @@ SEED_PROVIDERS = [
         ],
     },
     {
-        "user": {"email": "elaine.manicure@ibeauty.dev", "full_name": "Elaine Torres"},
+        "user": {"email": "elaine.manicure@ibeauty.dev", "full_name": "Elaine Torres", "phone": "+5511999050505"},
         "profile": {
             "business_name": "Elaine Nails Vila Mariana",
             "bio": "Atendimento em domicílio na zona sul.",
@@ -127,6 +129,7 @@ def seed_if_empty() -> None:
             user = User(
                 email=entry["user"]["email"],
                 full_name=entry["user"]["full_name"],
+                phone=entry["user"].get("phone"),
                 hashed_password=hash_password(SEED_PASSWORD),
                 role=UserRole.PROVIDER,
             )
@@ -146,8 +149,32 @@ def seed_if_empty() -> None:
         demo_client = User(
             email="cliente@ibeauty.dev",
             full_name="Cliente Demo",
+            phone="+5511988887777",
             hashed_password=hash_password(SEED_PASSWORD),
             role=UserRole.CLIENT,
         )
         session.add(demo_client)
         session.commit()
+
+
+def cleanup_test_providers() -> None:
+    """Remove prestadores de teste residuais (ex.: 'Teste unha')."""
+    with Session(engine) as session:
+        profiles = session.exec(select(ProviderProfile)).all()
+        for profile in profiles:
+            if profile.business_name.strip().lower() in CLEANUP_BUSINESS_NAMES:
+                bookings = session.exec(
+                    select(Booking).where(Booking.provider_id == profile.id)
+                ).all()
+                for b in bookings:
+                    session.delete(b)
+                services = session.exec(
+                    select(Service).where(Service.provider_id == profile.id)
+                ).all()
+                for s in services:
+                    session.delete(s)
+                user = session.get(User, profile.user_id)
+                session.delete(profile)
+                if user:
+                    session.delete(user)
+                session.commit()

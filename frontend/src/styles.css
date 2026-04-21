@@ -99,6 +99,18 @@ a:hover { text-decoration: underline; }
 }
 .btn-danger:hover { background: #ffebee; }
 
+.btn-whatsapp {
+  background: #25d366;
+  color: white;
+}
+.btn-whatsapp:hover { background: #1ebe5b; text-decoration: none; }
+
+.muted {
+  color: var(--ink-500);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 .card {
   background: var(--card);
   border-radius: var(--radius);
