@@ -87,7 +87,7 @@ export default function Home() {
             <option value={10}>Até 10 km</option>
             <option value={25}>Até 25 km</option>
             <option value={50}>Até 50 km</option>
-            <option value={500}>Qualquer distância</option>
+            <option value={20037}>Qualquer distância</option>
           </select>
         )}
       </div>
