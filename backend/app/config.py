@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     google_oauth_client_id: str = ""
     google_oauth_client_secret: str = ""
     seed_on_startup: bool = True
+    admin_token: str = "change-me-admin"
+    pix_key: str = ""
+    pix_key_type: str = "email"  # cpf | email | phone | random
+    pix_receiver_name: str = "Ibeauty"
+    pix_receiver_city: str = "SAO PAULO"
+    pro_price_cents: int = 3900
 
 
 settings = Settings()

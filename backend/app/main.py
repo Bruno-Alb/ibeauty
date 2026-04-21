@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db import init_db
-from app.routers import auth, bookings, providers
-from app.seed import cleanup_test_providers, seed_if_empty
+from app.routers import auth, bookings, plans, providers, reviews
+from app.seed import backfill_slugs, cleanup_test_providers, seed_if_empty
 
 
 @asynccontextmanager
@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
     if settings.seed_on_startup:
         seed_if_empty()
         cleanup_test_providers()
+    backfill_slugs()
     yield
 
 
@@ -32,6 +33,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(providers.router)
 app.include_router(bookings.router)
+app.include_router(reviews.router)
+app.include_router(plans.router)
 
 
 @app.get("/healthz")

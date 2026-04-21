@@ -1,9 +1,12 @@
 import type {
+  AdminProRequest,
   AuthResponse,
   AvailableSlot,
   Booking,
   BookingStatus,
+  PlanInfo,
   Provider,
+  Review,
   Service,
   User,
   UserRole,
@@ -40,13 +43,18 @@ export function clearAuth(): void {
   localStorage.removeItem(USER_KEY)
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  opts: { adminToken?: string } = {},
+): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(init.headers as Record<string, string> | undefined),
   }
   if (token) headers.Authorization = `Bearer ${token}`
+  if (opts.adminToken) headers['X-Admin-Token'] = opts.adminToken
   const res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
   if (!res.ok) {
     let detail = `Erro ${res.status}`
@@ -85,6 +93,13 @@ export const api = {
     return request<Provider[]>(`/api/providers${qs.toString() ? `?${qs}` : ''}`)
   },
   getProvider: (id: number) => request<Provider>(`/api/providers/${id}`),
+  getProviderBySlug: (slug: string) => request<Provider>(`/api/providers/slug/${slug}`),
+  listReviews: (providerId: number) => request<Review[]>(`/api/providers/${providerId}/reviews`),
+  submitReview: (bookingId: number, data: { rating: number; comment: string }) =>
+    request<Review>(`/api/bookings/${bookingId}/review`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   upsertMyProviderProfile: (data: Partial<Provider>) =>
     request<Provider>('/api/providers/me', { method: 'POST', body: JSON.stringify(data) }),
   getMyProviderProfile: () => request<Provider>('/api/providers/me/profile'),
@@ -106,6 +121,25 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     }),
+
+  myPlan: () => request<PlanInfo>('/api/plans/me'),
+  requestPro: () => request<PlanInfo>('/api/plans/me/request-pro', { method: 'POST' }),
+  cancelProRequest: () => request<PlanInfo>('/api/plans/me/cancel', { method: 'POST' }),
+
+  adminListProRequests: (token: string) =>
+    request<AdminProRequest[]>('/api/admin/pro-requests', {}, { adminToken: token }),
+  adminApprovePro: (token: string, providerId: number, months = 1) =>
+    request<Provider>(
+      '/api/admin/approve-pro',
+      { method: 'POST', body: JSON.stringify({ provider_id: providerId, months }) },
+      { adminToken: token },
+    ),
+  adminRevokePro: (token: string, providerId: number) =>
+    request<Provider>(
+      '/api/admin/revoke-pro',
+      { method: 'POST', body: JSON.stringify({ provider_id: providerId, months: 0 }) },
+      { adminToken: token },
+    ),
 }
 
 export function formatPrice(cents: number): string {

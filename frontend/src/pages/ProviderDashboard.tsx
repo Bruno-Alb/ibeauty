@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api, formatDateTime, formatPrice } from '../api'
 import { useAuth } from '../auth'
-import type { Booking, Provider, Service } from '../types'
+import type { Booking, PlanInfo, Provider, Service } from '../types'
 import { clientReminderUrl } from '../whatsapp'
 
 const CATEGORIES = ['manicure', 'cabelo', 'sobrancelha', 'estetica']
@@ -16,6 +17,7 @@ const emptyForm = {
   latitude: -23.5505,
   longitude: -46.6333,
   photo_url: '',
+  gallery: [] as string[],
   working_hours_start: '09:00:00',
   working_hours_end: '18:00:00',
   slot_minutes: 30,
@@ -33,6 +35,8 @@ export default function ProviderDashboard() {
   const [geocoding, setGeocoding] = useState(false)
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [savingPhone, setSavingPhone] = useState(false)
+  const [plan, setPlan] = useState<PlanInfo | null>(null)
+  const [newGalleryUrl, setNewGalleryUrl] = useState('')
 
   async function load() {
     try {
@@ -48,6 +52,7 @@ export default function ProviderDashboard() {
         latitude: p.latitude,
         longitude: p.longitude,
         photo_url: p.photo_url ?? '',
+        gallery: p.gallery ?? [],
         working_hours_start: p.working_hours_start,
         working_hours_end: p.working_hours_end,
         slot_minutes: p.slot_minutes,
@@ -57,8 +62,17 @@ export default function ProviderDashboard() {
     }
   }
 
+  async function loadPlan() {
+    try {
+      setPlan(await api.myPlan())
+    } catch {
+      setPlan(null)
+    }
+  }
+
   useEffect(() => {
     load()
+    loadPlan()
     api.providerBookings().then(setBookings).catch(() => {})
   }, [])
 
@@ -159,6 +173,31 @@ export default function ProviderDashboard() {
   return (
     <div className="container">
       <h1 className="page-title">Painel do prestador</h1>
+      {profile && (
+        <div className="card" style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <strong>Seu plano:</strong>
+              {plan?.plan === 'pro' && <span className="pro-badge">Pro ativo</span>}
+              {plan?.plan === 'pro_pending' && <span className="status-badge status-pending">aguardando pagamento</span>}
+              {(!plan || plan.plan === 'free') && <span className="chip">Free</span>}
+            </div>
+            <div className="muted" style={{ fontStyle: 'normal', marginTop: 2 }}>
+              Link público:{' '}
+              <Link to={`/p/${profile.slug}`} target="_blank" rel="noreferrer">
+                ibeauty.app/p/{profile.slug}
+              </Link>
+              {profile.rating_avg != null && (
+                <> · <span className="rating-inline">★ {profile.rating_avg.toFixed(1)} ({profile.rating_count})</span></>
+              )}
+            </div>
+          </div>
+          <Link className="btn btn-primary" to="/planos">
+            {plan?.plan === 'pro' ? 'Gerenciar plano' : 'Assinar Pro →'}
+          </Link>
+        </div>
+      )}
+
       <div className="tab-row">
         <button className={`tab${tab === 'perfil' ? ' active' : ''}`} onClick={() => setTab('perfil')}>Perfil</button>
         <button className={`tab${tab === 'servicos' ? ' active' : ''}`} onClick={() => setTab('servicos')}>Serviços</button>
@@ -253,6 +292,58 @@ export default function ProviderDashboard() {
                 <label>Intervalo (min)</label>
                 <input className="input" type="number" min={15} step={15} value={form.slot_minutes}
                   onChange={(e) => setForm((f) => ({ ...f, slot_minutes: Number(e.target.value) }))} />
+              </div>
+            </div>
+            <div className="field">
+              <label>Foto de capa (URL)</label>
+              <input className="input" value={form.photo_url}
+                onChange={(e) => setForm((f) => ({ ...f, photo_url: e.target.value }))}
+                placeholder="https://..." />
+            </div>
+            <div className="field">
+              <label>
+                Galeria de fotos
+                {plan?.plan !== 'pro' && <span className="chip" style={{ marginLeft: 8 }}>Recurso Pro</span>}
+              </label>
+              <small style={{ color: '#666' }}>
+                Adicione URLs públicas (ex: Imgur, Google Drive). Aparecem no seu perfil público.
+              </small>
+              {form.gallery.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                  {form.gallery.map((url, idx) => (
+                    <div key={url + idx} className="gallery-edit-item">
+                      <span style={{ fontSize: '0.85rem', color: '#555', wordBreak: 'break-all' }}>{url}</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setForm((f) => ({ ...f, gallery: f.gallery.filter((_, i) => i !== idx) }))}
+                      >
+                        remover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <input
+                  className="input"
+                  placeholder="https://link-da-foto.jpg"
+                  value={newGalleryUrl}
+                  onChange={(e) => setNewGalleryUrl(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={!newGalleryUrl.trim()}
+                  onClick={() => {
+                    const u = newGalleryUrl.trim()
+                    if (!u) return
+                    setForm((f) => ({ ...f, gallery: [...f.gallery, u] }))
+                    setNewGalleryUrl('')
+                  }}
+                >
+                  Adicionar
+                </button>
               </div>
             </div>
             <button className="btn btn-primary" type="submit">Salvar perfil</button>

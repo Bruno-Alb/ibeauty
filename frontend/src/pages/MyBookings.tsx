@@ -3,6 +3,7 @@ import { api, formatDateTime } from '../api'
 import { useAuth } from '../auth'
 import type { Booking } from '../types'
 import { providerReminderUrl } from '../whatsapp'
+import ReviewModal from '../components/ReviewModal'
 
 export default function MyBookings() {
   const { user, refreshUser } = useAuth()
@@ -12,6 +13,7 @@ export default function MyBookings() {
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [savingPhone, setSavingPhone] = useState(false)
   const [phoneMsg, setPhoneMsg] = useState('')
+  const [reviewing, setReviewing] = useState<Booking | null>(null)
 
   useEffect(() => { setPhone(user?.phone ?? '') }, [user?.phone])
 
@@ -107,11 +109,27 @@ export default function MyBookings() {
                     Cancelar
                   </button>
                 )}
+                {(b.status === 'completed' || b.status === 'confirmed') && (
+                  <button className="btn btn-outline btn-sm" onClick={() => setReviewing(b)}>
+                    ★ Avaliar
+                  </button>
+                )}
               </div>
             </div>
           ))
         )}
       </div>
+      {reviewing && (
+        <ReviewModal
+          booking={reviewing}
+          onClose={() => setReviewing(null)}
+          onSaved={() => {
+            setReviewing(null)
+            setPhoneMsg('Avaliação enviada! Obrigado ⭐')
+            setTimeout(() => setPhoneMsg(''), 2500)
+          }}
+        />
+      )}
     </div>
   )
 }

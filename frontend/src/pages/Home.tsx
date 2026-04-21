@@ -127,12 +127,54 @@ export default function Home() {
         ? '#b71c1c'
         : '#666'
 
+  const proCount = providers.filter((p) => p.plan === 'pro').length
+  const totalRatings = providers.reduce((acc, p) => acc + p.rating_count, 0)
+
   return (
     <div className="container">
       <section className="hero">
-        <h1>Beleza pertinho de você</h1>
-        <p>Encontre profissionais de manicure, cabelo, sobrancelha e estética na sua região e agende seu horário.</p>
+        <span className="pro-badge" style={{ marginBottom: 12 }}>Ibeauty · marketplace de beleza</span>
+        <h1>Beleza <span>pertinho</span> de você, no horário que você escolher.</h1>
+        <p>
+          Manicure, cabelo, sobrancelha e estética na sua região — sem ligar, sem ir atrás de horário,
+          com lembrete automático no WhatsApp.
+        </p>
+        <div className="hero-cta">
+          <a className="btn btn-primary" href="#buscar">Agendar agora</a>
+          <a className="btn btn-outline" href="/planos">Sou prestador →</a>
+        </div>
+        <div className="hero-stats">
+          <div className="hero-stat">
+            <strong>{providers.length || '—'}</strong>
+            <span>profissionais na plataforma</span>
+          </div>
+          <div className="hero-stat">
+            <strong>{proCount}</strong>
+            <span>no plano Pro hoje</span>
+          </div>
+          <div className="hero-stat">
+            <strong>{totalRatings}</strong>
+            <span>avaliações de clientes</span>
+          </div>
+        </div>
       </section>
+
+      <section className="social-proof">
+        <div className="proof-card">
+          <h4>Agendamento em 30s</h4>
+          <p>Escolha serviço, dia e horário. Tudo online — o prestador já recebe confirmado.</p>
+        </div>
+        <div className="proof-card">
+          <h4>Lembrete por WhatsApp</h4>
+          <p>Cliente e prestador recebem um link pronto no dia, reduzindo faltas em até 40%.</p>
+        </div>
+        <div className="proof-card">
+          <h4>Sem comissão por agendamento</h4>
+          <p>No Ibeauty você paga só o plano Pro — todo o valor da cliente vai pra você.</p>
+        </div>
+      </section>
+
+      <h2 id="buscar" style={{ marginTop: 28 }}>Encontre um profissional</h2>
 
       <div className="filters">
         <input
@@ -208,8 +250,16 @@ export default function Home() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div>
-                    <h3>{p.business_name}</h3>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0 }}>{p.business_name}</h3>
+                      {p.plan === 'pro' && <span className="pro-badge">Pro</span>}
+                    </div>
                     <div className="meta">{p.full_name} • {p.city}/{p.state}</div>
+                    {p.rating_avg != null && (
+                      <div className="rating-inline" style={{ marginTop: 4 }}>
+                        ★ {p.rating_avg.toFixed(1)} <small>({p.rating_count})</small>
+                      </div>
+                    )}
                   </div>
                   {p.distance_km != null && (
                     <span className="distance-badge">{p.distance_km.toFixed(1)} km</span>

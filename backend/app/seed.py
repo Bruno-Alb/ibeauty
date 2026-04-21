@@ -3,8 +3,9 @@ from datetime import time
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.models import Booking, ProviderProfile, Service, User, UserRole
+from app.models import Booking, ProviderProfile, Review, Service, User, UserRole
 from app.security import hash_password
+from app.slugs import unique_slug
 
 
 SEED_PASSWORD = "ibeauty123"
@@ -139,6 +140,9 @@ def seed_if_empty() -> None:
 
             profile = ProviderProfile(user_id=user.id, **entry["profile"])  # type: ignore[arg-type]
             session.add(profile)
+            session.flush()
+            profile.slug = unique_slug(session, profile.business_name, exclude_id=profile.id)
+            session.add(profile)
             session.commit()
             session.refresh(profile)
 
@@ -163,6 +167,11 @@ def cleanup_test_providers() -> None:
         profiles = session.exec(select(ProviderProfile)).all()
         for profile in profiles:
             if profile.business_name.strip().lower() in CLEANUP_BUSINESS_NAMES:
+                reviews = session.exec(
+                    select(Review).where(Review.provider_id == profile.id)
+                ).all()
+                for r in reviews:
+                    session.delete(r)
                 bookings = session.exec(
                     select(Booking).where(Booking.provider_id == profile.id)
                 ).all()
@@ -178,3 +187,17 @@ def cleanup_test_providers() -> None:
                 if user:
                     session.delete(user)
                 session.commit()
+
+
+def backfill_slugs() -> None:
+    """Preenche slug para perfis antigos que não tinham esse campo."""
+    with Session(engine) as session:
+        profiles = session.exec(select(ProviderProfile)).all()
+        changed = False
+        for profile in profiles:
+            if not profile.slug:
+                profile.slug = unique_slug(session, profile.business_name, exclude_id=profile.id)
+                session.add(profile)
+                changed = True
+        if changed:
+            session.commit()
