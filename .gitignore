@@ -26,3 +26,4 @@ dist/
 # Logs
 *.log
 test-plan.md
+test-report.md
