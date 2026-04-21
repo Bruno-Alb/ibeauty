@@ -62,5 +62,7 @@ export interface Booking {
   created_at: string
   service_name: string
   provider_business_name: string
+  provider_phone: string | null
   client_name: string
+  client_phone: string | null
 }

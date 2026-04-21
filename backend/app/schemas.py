@@ -26,6 +26,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -86,7 +91,9 @@ class BookingRead(BaseModel):
     created_at: datetime
     service_name: str
     provider_business_name: str
+    provider_phone: str | None = None
     client_name: str
+    client_phone: str | None = None
 
 
 class BookingStatusUpdate(BaseModel):

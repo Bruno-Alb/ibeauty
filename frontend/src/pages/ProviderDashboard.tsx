@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, formatDateTime, formatPrice } from '../api'
 import { useAuth } from '../auth'
 import type { Booking, Provider, Service } from '../types'
+import { clientReminderUrl } from '../whatsapp'
 
 const CATEGORIES = ['manicure', 'cabelo', 'sobrancelha', 'estetica']
 
@@ -21,7 +22,7 @@ const emptyForm = {
 }
 
 export default function ProviderDashboard() {
-  const { refreshUser } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [profile, setProfile] = useState<Provider | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [tab, setTab] = useState<'perfil' | 'servicos' | 'agenda'>('perfil')
@@ -30,6 +31,8 @@ export default function ProviderDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '' })
   const [geocoding, setGeocoding] = useState(false)
+  const [phone, setPhone] = useState(user?.phone ?? '')
+  const [savingPhone, setSavingPhone] = useState(false)
 
   async function load() {
     try {
@@ -58,6 +61,26 @@ export default function ProviderDashboard() {
     load()
     api.providerBookings().then(setBookings).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    setPhone(user?.phone ?? '')
+  }, [user?.phone])
+
+  async function savePhone(e: React.FormEvent) {
+    e.preventDefault()
+    setErr('')
+    setSuccess('')
+    setSavingPhone(true)
+    try {
+      await api.updateMe({ phone })
+      await refreshUser()
+      setSuccess('Telefone salvo.')
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setSavingPhone(false)
+    }
+  }
 
   async function geocodeAddress() {
     const q = `${form.address}, ${form.city}, ${form.state}, Brasil`
@@ -147,6 +170,24 @@ export default function ProviderDashboard() {
 
       {tab === 'perfil' && (
         <div className="card">
+          <form className="form" style={{ maxWidth: 600, marginBottom: 24 }} onSubmit={savePhone}>
+            <div className="field">
+              <label>Telefone / WhatsApp</label>
+              <input
+                className="input"
+                type="tel"
+                placeholder="(11) 99999-0000"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <small style={{ color: '#666' }}>
+                Usado para lembretes via WhatsApp. Deixe em branco para ocultar.
+              </small>
+            </div>
+            <button className="btn btn-outline" type="submit" disabled={savingPhone}>
+              {savingPhone ? 'Salvando...' : 'Salvar telefone'}
+            </button>
+          </form>
           <form className="form" style={{ maxWidth: 600 }} onSubmit={saveProfile}>
             <div className="field">
               <label>Nome do negócio</label>
@@ -287,8 +328,20 @@ export default function ProviderDashboard() {
                     {b.client_name} • {formatDateTime(b.start_at)}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className={`status-badge status-${b.status}`}>{b.status}</span>
+                  {b.status === 'confirmed' && (() => {
+                    const url = clientReminderUrl(b)
+                    return url ? (
+                      <a className="btn btn-whatsapp" href={url} target="_blank" rel="noreferrer">
+                        Lembrar cliente
+                      </a>
+                    ) : (
+                      <span className="muted" title="Cliente ainda não cadastrou telefone">
+                        sem WhatsApp
+                      </span>
+                    )
+                  })()}
                   {b.status === 'confirmed' && (
                     <>
                       <button className="btn btn-outline" onClick={() => updateStatus(b.id, 'completed')}>

@@ -68,6 +68,8 @@ export const api = {
   login: (data: { email: string; password: string }) =>
     request<AuthResponse>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   me: () => request<User>('/api/auth/me'),
+  updateMe: (data: { full_name?: string; phone?: string }) =>
+    request<User>('/api/auth/me', { method: 'PATCH', body: JSON.stringify(data) }),
 
   listProviders: (params: {
     lat?: number

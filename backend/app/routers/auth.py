@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.models import User
-from app.schemas import LoginRequest, TokenResponse, UserCreate, UserRead
+from app.schemas import LoginRequest, TokenResponse, UserCreate, UserRead, UserUpdate
 from app.security import create_access_token, get_current_user, hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -42,4 +42,20 @@ def login(payload: LoginRequest, session: Session = Depends(get_session)) -> Tok
 
 @router.get("/me", response_model=UserRead)
 def me(current: User = Depends(get_current_user)) -> UserRead:
+    return UserRead.model_validate(current.model_dump())
+
+
+@router.patch("/me", response_model=UserRead)
+def update_me(
+    payload: UserUpdate,
+    current: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> UserRead:
+    if payload.full_name is not None:
+        current.full_name = payload.full_name
+    if payload.phone is not None:
+        current.phone = payload.phone.strip() or None
+    session.add(current)
+    session.commit()
+    session.refresh(current)
     return UserRead.model_validate(current.model_dump())

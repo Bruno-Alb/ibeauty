@@ -20,6 +20,7 @@ def _to_read(b: Booking, session: Session) -> BookingRead:
     service = session.get(Service, b.service_id)
     provider = session.get(ProviderProfile, b.provider_id)
     client = session.get(User, b.client_id)
+    provider_user = session.get(User, provider.user_id) if provider else None
     return BookingRead(
         id=b.id,  # type: ignore[arg-type]
         client_id=b.client_id,
@@ -32,7 +33,9 @@ def _to_read(b: Booking, session: Session) -> BookingRead:
         created_at=b.created_at,
         service_name=service.name if service else "",
         provider_business_name=provider.business_name if provider else "",
+        provider_phone=provider_user.phone if provider_user else None,
         client_name=client.full_name if client else "",
+        client_phone=client.phone if client else None,
     )
 
 
