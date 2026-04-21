@@ -137,6 +137,7 @@ class PlanInfo(BaseModel):
     pix_key_type: str
     pix_receiver_name: str
     pix_payload: str | None = None  # BR Code (EMV) string for QR
+    admin_whatsapp_url: str | None = None  # wa.me link pro prestador avisar o admin
 
 
 class AdminProRequest(BaseModel):

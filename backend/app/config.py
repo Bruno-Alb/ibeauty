@@ -13,11 +13,12 @@ class Settings(BaseSettings):
     google_oauth_client_secret: str = ""
     seed_on_startup: bool = True
     admin_token: str = "change-me-admin"
-    pix_key: str = ""
-    pix_key_type: str = "email"  # cpf | email | phone | random
-    pix_receiver_name: str = "Ibeauty"
+    pix_key: str = "+5511981650278"
+    pix_key_type: str = "phone"  # cpf | email | phone | random
+    pix_receiver_name: str = "BRUNO ALB FERREIRA"
     pix_receiver_city: str = "SAO PAULO"
     pro_price_cents: int = 3900
+    admin_whatsapp: str = "5511981650278"  # E.164 sem '+'
 
 
 settings = Settings()

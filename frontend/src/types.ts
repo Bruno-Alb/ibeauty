@@ -72,6 +72,7 @@ export interface PlanInfo {
   pix_key_type: string
   pix_receiver_name: string
   pix_payload: string | null
+  admin_whatsapp_url: string | null
 }
 
 export interface AdminProRequest {

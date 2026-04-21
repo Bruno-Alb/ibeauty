@@ -40,6 +40,16 @@ def _plan_info(profile: ProviderProfile) -> PlanInfo:
             txid=f"IBPRO{profile.id:06d}",
             description=f"Ibeauty Pro {profile.business_name[:20]}",
         )
+    wa_url: str | None = None
+    if settings.admin_whatsapp:
+        from urllib.parse import quote
+
+        msg = (
+            f"Olá! Sou {profile.business_name} (Ibeauty). "
+            f"Acabei de pagar o Pix de R$ {settings.pro_price_cents / 100:.2f} "
+            f"para ativar meu plano Pro. Pode aprovar em /admin?"
+        )
+        wa_url = f"https://wa.me/{settings.admin_whatsapp}?text={quote(msg)}"
     return PlanInfo(
         plan=profile.plan,
         pro_requested_at=profile.pro_requested_at,
@@ -50,6 +60,7 @@ def _plan_info(profile: ProviderProfile) -> PlanInfo:
         pix_key_type=settings.pix_key_type,
         pix_receiver_name=settings.pix_receiver_name,
         pix_payload=payload,
+        admin_whatsapp_url=wa_url,
     )
 
 

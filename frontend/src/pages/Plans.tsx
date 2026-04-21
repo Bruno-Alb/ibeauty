@@ -137,7 +137,15 @@ export default function Plans() {
                 ? <>Escaneie o <strong>QR Code</strong> abaixo <strong>ou</strong> copie o código Pix Copia e Cola.</>
                 : <>Use a chave Pix abaixo para transferir <strong>{formatPrice(price)}</strong>.</>}
             </li>
-            <li>Envie o comprovante por WhatsApp para o admin do Ibeauty.</li>
+            <li>
+              {plan.admin_whatsapp_url ? (
+                <>
+                  Clique em <a href={plan.admin_whatsapp_url} target="_blank" rel="noreferrer"><strong>Avisar admin no WhatsApp</strong></a> e anexe o comprovante.
+                </>
+              ) : (
+                <>Envie o comprovante por WhatsApp para o admin do Ibeauty.</>
+              )}
+            </li>
             <li>
               Assim que confirmarmos, o selo <span className="pro-badge">Pro</span> vai aparecer no seu perfil.
             </li>
@@ -151,6 +159,17 @@ export default function Plans() {
                 📋 Copiar Pix Copia e Cola
               </button>
               {copyMsg && <span className="muted">{copyMsg}</span>}
+              {plan.admin_whatsapp_url && (
+                <a
+                  className="btn btn-outline btn-sm"
+                  href={plan.admin_whatsapp_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ marginTop: 8 }}
+                >
+                  💬 Avisar admin no WhatsApp
+                </a>
+              )}
             </div>
           ) : (
             <div className="qr-box" style={{ maxWidth: 380, margin: '12px auto' }}>
