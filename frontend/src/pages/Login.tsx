@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 export default function Login() {
   const { login } = useAuth()
@@ -11,14 +12,15 @@ export default function Login() {
   const [err, setErr] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const redirectTo = (location.state as { from?: string } | null)?.from || '/'
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setErr('')
     setLoading(true)
     try {
       await login(email, password)
-      const from = (location.state as { from?: string } | null)?.from || '/'
-      navigate(from)
+      navigate(redirectTo)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -43,21 +45,23 @@ export default function Login() {
           <button className="btn btn-primary" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
-          <button
-            type="button"
-            className="btn btn-outline"
-            disabled
-            title="Google OAuth será ativado quando as credenciais forem configuradas"
-          >
-            Entrar com Google (em breve)
-          </button>
-          <p style={{ fontSize: '0.9rem', color: '#666', marginTop: 8 }}>
-            Não tem conta? <Link to="/cadastro">Criar conta</Link>
-          </p>
-          <p style={{ fontSize: '0.85rem', color: '#999', marginTop: 4 }}>
-            Demo: <code>cliente@ibeauty.dev</code> / <code>ibeauty123</code>
-          </p>
         </form>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '16px 0', color: '#999', fontSize: '0.85rem' }}>
+          <div style={{ flex: 1, height: 1, background: '#e5e5e5' }} />
+          <span>ou</span>
+          <div style={{ flex: 1, height: 1, background: '#e5e5e5' }} />
+        </div>
+        <GoogleSignInButton
+          text="signin_with"
+          onSuccess={() => navigate(redirectTo)}
+          onError={(m) => setErr(m)}
+        />
+        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: 16 }}>
+          Não tem conta? <Link to="/cadastro">Criar conta</Link>
+        </p>
+        <p style={{ fontSize: '0.85rem', color: '#999', marginTop: 4 }}>
+          Demo: <code>cliente@ibeauty.dev</code> / <code>ibeauty123</code>
+        </p>
       </div>
     </div>
   )

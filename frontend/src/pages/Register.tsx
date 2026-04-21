@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 import type { UserRole } from '../types'
 
 export default function Register() {
@@ -70,10 +71,21 @@ export default function Register() {
           <button className="btn btn-primary" disabled={loading}>
             {loading ? 'Criando...' : 'Criar conta'}
           </button>
-          <p style={{ fontSize: '0.9rem', color: '#666', marginTop: 8 }}>
-            Já tem conta? <Link to="/login">Entrar</Link>
-          </p>
         </form>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '16px 0', color: '#999', fontSize: '0.85rem' }}>
+          <div style={{ flex: 1, height: 1, background: '#e5e5e5' }} />
+          <span>ou</span>
+          <div style={{ flex: 1, height: 1, background: '#e5e5e5' }} />
+        </div>
+        <GoogleSignInButton
+          role={form.role}
+          text="signup_with"
+          onSuccess={(u) => navigate(u.role === 'provider' ? '/prestador' : '/')}
+          onError={(m) => setErr(m)}
+        />
+        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: 16 }}>
+          Já tem conta? <Link to="/login">Entrar</Link>
+        </p>
       </div>
     </div>
   )

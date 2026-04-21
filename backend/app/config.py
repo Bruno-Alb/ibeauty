@@ -9,8 +9,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
     cors_origins: str = "*"
-    google_oauth_client_id: str = ""
-    google_oauth_client_secret: str = ""
+    google_oauth_client_id: str = (
+        "724429137037-9p7qmppmv5q6cbep01ui6go9v5fg3orv.apps.googleusercontent.com"
+    )
+    google_oauth_client_secret: str = ""  # não é necessário p/ verificar id_token
     seed_on_startup: bool = True
     admin_token: str = "change-me-admin"
     pix_key: str = "+5511981650278"

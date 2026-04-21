@@ -75,6 +75,8 @@ export const api = {
     request<AuthResponse>('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<AuthResponse>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  loginWithGoogle: (data: { id_token: string; role?: UserRole }) =>
+    request<AuthResponse>('/api/auth/google', { method: 'POST', body: JSON.stringify(data) }),
   me: () => request<User>('/api/auth/me'),
   updateMe: (data: { full_name?: string; phone?: string }) =>
     request<User>('/api/auth/me', { method: 'PATCH', body: JSON.stringify(data) }),
