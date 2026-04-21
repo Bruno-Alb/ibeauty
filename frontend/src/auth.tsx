@@ -7,6 +7,7 @@ interface AuthCtx {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: (idToken: string, role?: UserRole) => Promise<User>
   register: (data: { email: string; password: string; full_name: string; phone?: string; role?: UserRole }) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -44,6 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       login: async (email, password) => handleAuth(await api.login({ email, password })),
+      loginWithGoogle: async (idToken, role) => {
+        const resp = await api.loginWithGoogle({ id_token: idToken, role })
+        handleAuth(resp)
+        return resp.user
+      },
       register: async (data) => handleAuth(await api.register(data)),
       logout: () => {
         clearAuth()

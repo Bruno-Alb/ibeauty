@@ -26,6 +26,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GoogleLoginRequest(BaseModel):
+    id_token: str
+    role: UserRole | None = None
+
+
 class UserUpdate(BaseModel):
     full_name: str | None = None
     phone: str | None = None
