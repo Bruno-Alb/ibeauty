@@ -38,7 +38,7 @@ def _to_read(p: ProviderProfile, distance_km: float | None = None) -> ProviderPr
 def list_providers(
     lat: float | None = Query(None),
     lng: float | None = Query(None),
-    radius_km: float = Query(50.0, ge=0.1, le=500),
+    radius_km: float = Query(50.0, ge=0.1, le=20037),
     category: str | None = None,
     q: str | None = None,
     session: Session = Depends(get_session),
