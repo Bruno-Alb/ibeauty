@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/api.ts","./src/auth.tsx","./src/main.tsx","./src/types.ts","./src/components/Navbar.tsx","./src/components/ProviderMap.tsx","./src/pages/Home.tsx","./src/pages/Login.tsx","./src/pages/MyBookings.tsx","./src/pages/ProviderDashboard.tsx","./src/pages/ProviderDetail.tsx","./src/pages/Register.tsx"],"version":"5.9.3"}
