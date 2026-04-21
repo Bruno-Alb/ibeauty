@@ -1,6 +1,8 @@
 from datetime import datetime, time
 from enum import Enum
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -53,7 +55,18 @@ class ProviderProfile(SQLModel, table=True):
     working_hours_start: time = Field(default=time(9, 0))
     working_hours_end: time = Field(default=time(18, 0))
     slot_minutes: int = 30
-    plan: ProviderPlan = Field(default=ProviderPlan.FREE)
+    plan: ProviderPlan = Field(
+        default=ProviderPlan.FREE,
+        sa_column=Column(
+            SAEnum(
+                ProviderPlan,
+                values_callable=lambda enum: [e.value for e in enum],
+                native_enum=False,
+            ),
+            nullable=False,
+            server_default=ProviderPlan.FREE.value,
+        ),
+    )
     pro_requested_at: datetime | None = None
     pro_approved_at: datetime | None = None
     pro_expires_at: datetime | None = None
